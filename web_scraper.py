@@ -14,7 +14,9 @@ async def main():
         element = await tab.find(class_name="post-background-image-filter")
         image = element.get_attribute("src")        
         print(image)
-        
+
+        await tab.execute_script("window.scrollBy(0, 1000)")
+
         await asyncio.sleep(1000000)
 
 
