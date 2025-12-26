@@ -54,13 +54,6 @@ def extract_meme_data_reddit(loaded_json: dict) -> list[dict]:
 
     return posts
 
-
-
-
-
-
-
-
 if __name__ == "__main__":
     # Logging configs
     basicConfig(
