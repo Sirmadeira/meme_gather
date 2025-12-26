@@ -1,0 +1,3 @@
+2025-12-26 14:57:01,828 DEBUG  asyncio: Using selector: EpollSelector
+2025-12-26 14:57:03,459 DEBUG  root: Ran the chromium driver and grabbed json data
+2025-12-26 14:57:03,632 DEBUG  root: {'title': 'Just a meme', 'score': 7648, 'upvotes': 7648, 'num_comments': 33, 'upvote_ratio': 0.97, 'is_created_from_ads_ui': False, 'total_awards_received': 0, 'num_reports': None, 'image_url': 'https://i.redd.it/zk069gk1ei9g1.jpeg'}
