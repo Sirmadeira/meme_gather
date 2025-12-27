@@ -33,8 +33,9 @@ async def grab_reddit_json(subreddit: str, amount_of_posts: int) -> str:
         if not text or not text.strip():
             raise ValueError("Reddit JSON response is empty")
 
-        logging.debug("Ran the chromium driver and grabbed json data")
+        logging.debug(f"Successfully grabbed {text} data from reddit!")
         return text
+        browser.close()
 
 
 async def fetch_all_reddit_json(subreddits: list[str], limit: int) -> list[dict]:
@@ -56,39 +57,59 @@ async def fetch_all_reddit_json(subreddits: list[str], limit: int) -> list[dict]
 
 def extract_meme_data_reddit(loaded_jsons: list[dict]) -> pl.DataFrame:
     """
-    Intakes a list of dicts, and extract only the needed data.
+    Intakes a list of dicts and extracts only the needed meme data.
 
     Args:
-        loaded_jsons: The reddit jsons that were loaded
+        loaded_jsons: Parsed Reddit JSON responses.
 
     Returns:
-        A dataframe object
+        Polars DataFrame containing normalized meme metadata.
     """
-    posts = []
+    posts: list[dict] = []
 
     for loaded_json in loaded_jsons:
         children = loaded_json.get("data", {}).get("children", [])
         if not children:
+            logger.warning("Empty Reddit listing encountered")
             continue
 
         for child in children:
             data = child["data"]
             posts.append(
                 {
+                    "created_utc": data.get("created_utc"),
                     "title": data.get("title"),
                     "score": data.get("score"),
                     "upvotes": data.get("ups"),
                     "num_comments": data.get("num_comments"),
-                    # Remember create downvote call from this godamm fuzzy beards
                     "upvote_ratio": data.get("upvote_ratio"),
                     "is_created_from_ads_ui": data.get("is_created_from_ads_ui"),
                     "total_awards_received": data.get("total_awards_received"),
                     "num_reports": data.get("num_reports"),
                     "image_url": data.get("url_overridden_by_dest"),
+                    "is_video": data.get("is_video"),
                 }
             )
 
-    return pl.DataFrame(posts)
+    df = (
+        pl.DataFrame(posts)
+        .with_columns(pl.from_epoch("created_utc", time_unit="s").alias("created_at"))
+        .with_columns(
+            [
+                pl.col("created_utc").cast(pl.Int64),
+                pl.col("score").cast(pl.Int64),
+                pl.col("upvotes").cast(pl.Int64),
+                pl.col("num_comments").cast(pl.Int64),
+                pl.col("upvote_ratio").cast(pl.Float64),
+                pl.col("total_awards_received").cast(pl.Int64),
+            ]
+        )
+    )
+
+    logging.info(f"Extracted %d memes", df.height)
+    logging.debug("Sample data:\n%s", df.head())
+
+    return df
 
 
 def append_to_parquet(df: pl.DataFrame, path: str):
@@ -106,6 +127,7 @@ def append_to_parquet(df: pl.DataFrame, path: str):
 
     if path.exists():
         df = pl.read_parquet(path).vstack(df).unique(subset=["title", "image_url"])
+        logging.info("You already had a pre-existing data apprending new data!")
 
     df.write_parquet(path)
 
@@ -113,7 +135,7 @@ def append_to_parquet(df: pl.DataFrame, path: str):
 def setup_logging():
     logging.basicConfig(
         level=logging.DEBUG,
-        filename="reddit_scraper.log",
+        filename="scraper.log",
         filemode="w",
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
@@ -130,7 +152,9 @@ if __name__ == "__main__":
         "https://www.reddit.com/r/memes/",
         "https://www.reddit.com/r/Memes_Of_The_Dank/",
     ]
-
-    loaded_jsons = asyncio.run(fetch_all_reddit_json(SUBREDDITS, limit=1))
+    # Extract
+    loaded_jsons = asyncio.run(fetch_all_reddit_json(SUBREDDITS, limit=1000))
+    # Slight Transform
     df = extract_meme_data_reddit(loaded_jsons)
+    # Dump
     append_to_parquet(df, "data/base.parquet")
