@@ -21,11 +21,19 @@ async def grab_reddit_json(subreddit: str, amount_of_posts: int) -> str:
     """
     options = ChromiumOptions()
     options.binary_location = "/usr/bin/chromium"
-    options.add_argument("--disable-blink-features=AutomationControlled")
+    # Essential for server functionality
+    options.add_argument("--headless=new")
+    options.add_argument("--no-sandbox")
+    options.add_argument(
+        "--user-agent=Mozilla/5.0 (X11; Linux x86_64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0.0.0 Safari/537.36"
+    )
 
     async with Chrome(options=options) as browser:
         tab = await browser.start()
         await tab.go_to(f"{subreddit}.json?limit={amount_of_posts}")
+        text = await tab.execute_script("document.body.innerText")
 
         json_holder = await tab.find(tag_name="pre")
         text = await json_holder.text
@@ -153,7 +161,7 @@ if __name__ == "__main__":
         "https://www.reddit.com/r/Memes_Of_The_Dank/",
     ]
     # Extract
-    loaded_jsons = asyncio.run(fetch_all_reddit_json(SUBREDDITS, limit=1000))
+    loaded_jsons = asyncio.run(fetch_all_reddit_json(SUBREDDITS, limit=1))
     # Slight Transform
     df = extract_meme_data_reddit(loaded_jsons)
     # Dump
