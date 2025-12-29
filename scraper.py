@@ -1,49 +1,7 @@
-import asyncio
-import orjson
 import polars as pl
 import logging
+import requests
 from pathlib import Path
-from pydoll.browser import Chrome
-from pydoll.browser.options import ChromiumOptions
-
-
-# https://www.reddit.com/r/news.json?limit=100
-async def grab_reddit_json(subreddit: str, amount_of_posts: int) -> str:
-    """
-    Opens up a chromium driver in the sub-reddit source page and returns it is json text.
-
-    Args:
-        subreddit: Base urls for the subreddit.
-        amount_of_posts: Number of posts to fetch per subreddit.
-
-    Returns:
-        A loadable json string.
-    """
-    options = ChromiumOptions()
-    options.binary_location = "/usr/bin/chromium"
-    # Essential for server functionality
-    options.add_argument("--headless=new")
-    options.add_argument("--no-sandbox")
-    options.add_argument(
-        "--user-agent=Mozilla/5.0 (X11; Linux x86_64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/120.0.0.0 Safari/537.36"
-    )
-
-    async with Chrome(options=options) as browser:
-        tab = await browser.start()
-        await tab.go_to(f"{subreddit}.json?limit={amount_of_posts}")
-        text = await tab.execute_script("document.body.innerText")
-
-        json_holder = await tab.find(tag_name="pre")
-        text = await json_holder.text
-
-        if not text or not text.strip():
-            raise ValueError("Reddit JSON response is empty")
-
-        logging.debug(f"Successfully grabbed {text} data from reddit!")
-        return text
-        browser.close()
 
 
 async def fetch_all_reddit_json(subreddits: list[str], limit: int) -> list[dict]:
@@ -57,9 +15,20 @@ async def fetch_all_reddit_json(subreddits: list[str], limit: int) -> list[dict]
     Returns:
         A list of dicts that were previously jsons.
     """
-    results = await asyncio.gather(
-        *[grab_reddit_json(url, limit) for url in subreddits]
-    )
+
+    # Headers to ofuscate identification
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (X11; Linux x86_64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        )
+    }
+    results = [
+        requests.get(f"{url}/.json?limit={limit}", headers=headers).json()
+        for url in subreddits
+    ]
+
     return [orjson.loads(r) for r in results]
 
 
