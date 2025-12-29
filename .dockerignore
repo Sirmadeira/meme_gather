@@ -6,6 +6,7 @@ __pycache__/
 .git
 .gitignore
 # Data should be ignores as all this docker scrip does is run in a safe environment
-/data
+data/*
+!data/.gitkeep
 # Vscode
 ./vscode

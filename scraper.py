@@ -2,6 +2,7 @@ import polars as pl
 import logging
 import requests
 from pathlib import Path
+from datetime import datetime
 
 
 def fetch_all_reddit_json(subreddits: list[str], limit: int) -> list[dict]:
@@ -89,26 +90,6 @@ def extract_meme_data_reddit(loaded_jsons: list[dict]) -> pl.DataFrame:
     return df
 
 
-def append_to_parquet(df: pl.DataFrame, path: str):
-    """
-    Append new meme data to a Parquet dataset.
-
-    If the dataset already exists, new rows are concatenated and
-    duplicates are removed based on title and image URL.
-
-    Args:
-        df: New meme data.
-        path: Path to the Parquet file.
-    """
-    path = Path(path)
-
-    if path.exists():
-        df = pl.read_parquet(path).vstack(df).unique(subset=["title", "image_url"])
-        logging.info("You already had a pre-existing data apprending new data!")
-
-    df.write_parquet(path)
-
-
 def setup_logging():
     logging.basicConfig(
         level=logging.DEBUG,
@@ -134,4 +115,7 @@ if __name__ == "__main__":
     # Slight Transform
     df = extract_meme_data_reddit(loaded_jsons)
     # Dump
-    append_to_parquet(df, "data/base.parquet")
+    # Get current datetime
+    now = datetime.now()
+    formatted = now.strftime("%Y-%m-%d%H:%M:%S.%f")[:-3]
+    df.write_parquet(f"data/reddit_data_from_{formatted}.parquet")
