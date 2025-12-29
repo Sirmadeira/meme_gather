@@ -2,10 +2,4 @@
 
 
 # Run scraper every day at 2 AM
-        # Builds container  
-* * * * * /usr/bin/docker build -t scraper /home/sirmadeira/Projects/make_memes && \
-        # Runs container
-        /usr/bin/docker run --rm \
-        -v /home/sirmadeira/Projects/make_memes/data:/app/data \
-        -v /home/sirmadeira/Projects/make_memes/logs:/app/logs \
-        scraper
+0 2 * * * /bin/bash -c "/usr/bin/docker build -t scraper /home/sirmadeira/Projects/make_memes && /usr/bin/docker run --rm -v /home/sirmadeira/Projects/make_memes/data:/app/data -v /home/sirmadeira/Projects/make_memes/logs:/app/logs scraper"
