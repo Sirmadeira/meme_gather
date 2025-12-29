@@ -4,7 +4,7 @@ import requests
 from pathlib import Path
 
 
-async def fetch_all_reddit_json(subreddits: list[str], limit: int) -> list[dict]:
+def fetch_all_reddit_json(subreddits: list[str], limit: int) -> list[dict]:
     """
     Fetch Reddit JSON listings concurrently.
 
@@ -29,7 +29,7 @@ async def fetch_all_reddit_json(subreddits: list[str], limit: int) -> list[dict]
         for url in subreddits
     ]
 
-    return [orjson.loads(r) for r in results]
+    return results
 
 
 def extract_meme_data_reddit(loaded_jsons: list[dict]) -> pl.DataFrame:
@@ -130,7 +130,7 @@ if __name__ == "__main__":
         "https://www.reddit.com/r/Memes_Of_The_Dank/",
     ]
     # Extract
-    loaded_jsons = asyncio.run(fetch_all_reddit_json(SUBREDDITS, limit=1))
+    loaded_jsons = fetch_all_reddit_json(SUBREDDITS, limit=1)
     # Slight Transform
     df = extract_meme_data_reddit(loaded_jsons)
     # Dump
