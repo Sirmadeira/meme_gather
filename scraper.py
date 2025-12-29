@@ -91,8 +91,6 @@ def extract_meme_data_reddit(loaded_jsons: list[dict]) -> pl.DataFrame:
 
 
 def setup_logging(time: str):
-    now = datetime.now()
-    formatted = now.strftime("%Y-%m-%d%H:%M:%S.%f")[:-3]
     logging.basicConfig(
         level=logging.DEBUG,
         filename=f"logs/scraper_run_{formatted}.log",
@@ -105,8 +103,7 @@ def setup_logging(time: str):
 
 
 if __name__ == "__main__":
-    now = datetime.now()
-    formatted = now.strftime("%Y-%m-%d%H:%M:%S.%f")[:-3]
+    formatted = now.strftime("%Y_%m_%d%_H:%M:%S.%f")[:-3]
     setup_logging(time=formatted)
     SUBREDDITS = [
         "https://www.reddit.com/r/dankmemes/",
@@ -114,7 +111,7 @@ if __name__ == "__main__":
         "https://www.reddit.com/r/Memes_Of_The_Dank/",
     ]
     # Extract
-    loaded_jsons = fetch_all_reddit_json(SUBREDDITS, limit=1)
+    loaded_jsons = fetch_all_reddit_json(SUBREDDITS, limit=100)
     # Slight Transform
     df = extract_meme_data_reddit(loaded_jsons)
     # Dump
