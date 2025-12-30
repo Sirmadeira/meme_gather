@@ -66,6 +66,7 @@ def extract_meme_data_reddit(loaded_jsons: list[dict]) -> pl.DataFrame:
                     "num_reports": data.get("num_reports"),
                     "image_url": data.get("url_overridden_by_dest"),
                     "is_video": data.get("is_video"),
+                    "sub_reddit": data.get("subreddit")
                 }
             )
 
