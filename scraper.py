@@ -1,7 +1,9 @@
 import polars as pl
 import logging
 import time
+import easyocr
 import requests
+import torch
 from pathlib import Path
 from datetime import datetime
 
@@ -109,6 +111,39 @@ def extract_meme_data_reddit(all_posts: list[dict]) -> pl.DataFrame:
     return df
 
 
+def transform_texts_from_images(df: pl.DataFrame) -> pl.DataFrame:
+    """
+    Intakes the df gets it is image_urls and extracts the text if no text is available append none
+
+    Args:
+        loaded_jsons: Parsed Reddit JSON responses.
+
+    Returns:
+        Polars DataFrame containing normalized meme metadata.
+    """
+    meme_text = []
+
+    for url in df["image_url"]:
+        try:
+            r = requests.get(url, timeout=5)
+            r.raise_for_status()
+
+            img = cv2.imdecode(np.frombuffer(r.content, np.uint8), cv2.IMREAD_COLOR)
+
+            if img is None:
+                meme_text.append(None)
+                continue
+
+            result = reader.readtext(img, detail=0, paragraph=True)
+            logg
+            meme_text.append(result)
+
+        except Exception:
+            meme_text.append(None)
+
+    return df.with_columns(pl.Series("meme_text", meme_text))
+
+
 def setup_logging(time: str):
     logging.basicConfig(
         level=logging.DEBUG,
@@ -133,7 +168,7 @@ if __name__ == "__main__":
         "https://www.reddit.com/r/Memes_Of_The_Dank/",
     ]
     # Extract
-    all_posts = get_reddit_jsons(SUBREDDITS, pages=10)
+    all_posts = get_reddit_jsons(SUBREDDITS, pages=1)
     # Transform to dataframe
     df = extract_meme_data_reddit(all_posts)
     # Dump
